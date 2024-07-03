@@ -28,12 +28,12 @@
       <!-- može InstagamCard ili instagram-card -->
       <instagram-card
         v-for="card in filteredCards"
-        :key="card.url"
+        :key="card.id"
         :info="card"
       />
     </div>
     <div class="col-3">
-      <p v-for="card in filteredCards" :key="card.url">
+      <p v-for="card in filteredCards" :key="card.id">
         Link slike: {{ card.url }}
       </p>
     </div>
@@ -45,43 +45,66 @@ import InstagramCard from "@/components/InstagramCard.vue";
 import store from "@/store";
 import { db } from "@/firebase";
 
-let cards = [
-  {
-    url: "https://picsum.photos/id/1/400/400",
-    description: "laptop",
-    time: "maloprije",
-  },
-  {
-    url: "https://picsum.photos/id/2/400/400",
-    description: "laptop #2",
-    time: "nešto ranije",
-  },
-  {
-    url: "https://picsum.photos/id/3/400/400",
-    description: "laptop #3",
-    time: "prije koji sat",
-  },
-  {
-    url: "https://picsum.photos/id/4/400/400",
-    description: "laptop #4",
-    time: "jučer",
-  },
-];
+//let cards = [
+//  {
+//    url: "https://picsum.photos/id/1/400/400",
+//    description: "laptop",
+//    time: "maloprije",
+//  },
+//  {
+//    url: "https://picsum.photos/id/2/400/400",
+//    description: "laptop #2",
+//    time: "nešto ranije",
+//  },
+//  {
+//    url: "https://picsum.photos/id/3/400/400",
+//    description: "laptop #3",
+//    time: "prije koji sat",
+//  },
+//  {
+//    url: "https://picsum.photos/id/4/400/400",
+//    description: "laptop #4",
+//    time: "jučer",
+//  },
+//];
 export default {
   name: "HomeView",
   data: function () {
     return {
-      cards: cards,
+      cards: [],
       store: store,
       newImageUrl: "",
       newImageDescription: "",
     };
   },
+  mounted() {
+    // dohvat iz firebase, prikazuje na ekran
+    this.getPosts();
+  },
   methods: {
+    getPosts() {
+      db.collection("posts")
+        .orderBy("posted_at", "desc")
+        .limit(10)
+        .get()
+        .then((query) => {
+          // pražnjenje postova, da se ne bi duplao prikaz
+          this.cards = [];
+          query.forEach((doc) => {
+            const data = doc.data();
+            this.cards.push({
+              id: doc.id,
+              time: data.posted_at,
+              description: data.desc,
+              url: data.url,
+            });
+          });
+        });
+    },
     postNewImage() {
       const imageUrl = this.newImageUrl;
       const imageDescription = this.newImageDescription;
-
+      this.getPosts();
       db.collection("posts")
         .add({
           url: imageUrl,
