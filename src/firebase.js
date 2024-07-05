@@ -1,6 +1,7 @@
 import firebase from "firebase/app";
 import "firebase/auth";
 import "firebase/firestore";
+import "firebase/storage";
 // Import the functions you need from the SDKs you need
 // import { initializeApp } from "firebase/app";
 // TODO: Add SDKs for Firebase products that you want to use
@@ -19,8 +20,10 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 let db = firebase.firestore();
+let storage = firebase.storage();
 export {
   // kad je ključ jendak vrijednost može se skratiti npr. firebase:firebase u
   firebase,
   db,
+  storage,
 };
