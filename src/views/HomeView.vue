@@ -2,7 +2,12 @@
   <div class="row">
     <div class="col-1"></div>
     <div class="col-8">
-      <form @submit.prevent="postNewImage" class="form mb-5">
+      <img
+        v-if="loading"
+        :src="require('@/assets/loading.gif')"
+        style="width: 400px"
+      />
+      <form v-if="!loading" @submit.prevent="postNewImage" class="form mb-5">
         <div class="form-group">
           <croppa
             :width="400"
@@ -47,6 +52,7 @@ export default {
   name: "HomeView",
   data: function () {
     return {
+      loading: false,
       cards: [],
       store: store,
       newImageUrl: "",
@@ -78,45 +84,39 @@ export default {
           });
         });
     },
-    postNewImage() {
-      this.imageReference.generateBlob((blobdata) => {
-        console.log(blobdata);
+    getImage() {
+      // Promise based
+      return new Promise((resolveFn) => {
+        this.imageReference.generateBlob((data) => {
+          resolveFn(data);
+        });
+      });
+    },
+    async postNewImage() {
+      try {
+        this.loading = true;
+        let blobdata = await this.getImage();
 
         let imageName =
           "posts/" + store.currentUser + "/" + Date.now() + ".png";
 
-        storage
-          .ref(imageName)
-          .put(blobdata)
-          .then((result) => {
-            // uspješno
-            result.ref.getDownloadURL().then((url) => {
-              console.log("Link je:", url);
+        let result = await storage.ref(imageName).put(blobdata);
+        let url = await result.ref.getDownloadURL();
+        console.log("Link je:", url);
 
-              const imageDescription = this.newImageDescription;
-              this.getPosts();
-              db.collection("posts")
-                .add({
-                  url: url,
-                  desc: imageDescription,
-                  email: store.currentUser,
-                  posted_at: Date.now(),
-                })
-                .then((doc) => {
-                  alert("Spremljeno:", doc);
-                  // pražnjenje polja
-                  this.imageReference.remove();
-                  this.newImageDescription = "";
-                })
-                .catch((e) => {
-                  console.error("Greška: ", e);
-                });
-            });
-          })
-          .catch((e) => {
-            console.error(e);
-          });
-      });
+        const imageDescription = this.newImageDescription;
+        let doc = await db.collection("posts").add({
+          url: url,
+          desc: imageDescription,
+          email: store.currentUser,
+          posted_at: Date.now(),
+        });
+        alert("Spremljeno:", doc);
+        this.getPosts();
+      } catch (e) {
+        console.error("Greška: ", e);
+      }
+      this.loading = false;
     },
   },
   computed: {
